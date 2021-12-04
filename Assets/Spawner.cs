@@ -1,5 +1,7 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using Unity.Entities;
+using Unity.Mathematics;
+using Unity.Transforms;
 using UnityEngine;
 
 public class Spawner : MonoBehaviour
@@ -12,23 +14,27 @@ public class Spawner : MonoBehaviour
     void Start()
     {
         int size = 100;
+        var entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
+        var setting = GameObjectConversionSettings.FromWorld(World.DefaultGameObjectInjectionWorld, new BlobAssetStore());
+        var entityPrefab = GameObjectConversionUtility.ConvertGameObjectHierarchy(_prefab, setting);
         for (int i = 0; i < size; i++)
         {
             for (int j = 0; j < size; j++)
             {
-                var obj = Instantiate(_prefab);
-                obj.transform.position = new Vector3(i - size / 2, 0, j - size / 2);
-                SpawnedObjects.Add(obj);
                 if (!_isOnDoDMode)
                 {
-                    if(Random.value > 0.5f ? false : true)
-                    {
-                        obj.AddComponent<NormalMover>();
-                    }
-                    else
-                    {
-                        obj.AddComponent<OppositeMover>();
-                    }
+                    var obj = Instantiate(_prefab);
+                    obj.transform.position = new Vector3(i - size / 2, 0, j - size / 2);
+                    SpawnedObjects.Add(obj);
+                    var mover = obj.AddComponent<Mover>();
+                    mover.IsOpposite = UnityEngine.Random.value > 0.5f;
+                }
+                else
+                {
+                    var entity = entityManager.Instantiate(entityPrefab);
+                    Translation traslation = new Translation();
+                    traslation.Value = new float3(i - size / 2, 0, j - size / 2);
+                    entityManager.AddComponentData(entity, traslation);
                 }
             }
         }
